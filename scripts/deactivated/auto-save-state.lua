@@ -8,15 +8,21 @@ end
 
 local opts = require 'mp.options'
 local o = {
-    threshold = 120,
+    thresh_end = 120,
+    thresh_start = 240,
     timer_wait = 10,
 }
 opts.read_options(o)
 
--- Set threshold from command line by using --script-opts=ass-threshold=t
-t = tonumber(mp.get_opt("ass-threshold"))
+
+-- Set thresh_* from command line by using --script-opts=ass-thresh_*=t
+t = tonumber(mp.get_opt("ass-thresh_end"))
 if t then
-    o.threshold = t
+    o.thresh_end = t
+end
+t = tonumber(mp.get_opt("ass-thresh_start"))
+if t then
+    o.thresh_start = t
 end
 
 
@@ -26,8 +32,13 @@ function check_time()
         --print("Error: " .. err)
         return
     end
+    pos, err = mp.get_property_number("time-pos")
+    if not pos then
+        --print("Error: " .. err)
+        return
+    end
 
-    if (o.threshold > remaining) then
+    if o.thresh_end > remaining or pos < o.thresh_start then
         mp.set_property_bool("options/save-position-on-quit", false)
     else
         mp.set_property_bool("options/save-position-on-quit", true)
@@ -38,9 +49,9 @@ end
 -- Check by polling
 --timer = mp.add_periodic_timer(o.timer_wait, check_time)
 -- Check on every seek
-mp.register_event("seek", check_time)
+--mp.register_event("seek", check_time)
 -- Check on every (un)pause
-mp.observe_property("pause", "bool", check_time)
+--mp.observe_property("pause", "bool", check_time)
 -- Check on every quit
 mp.add_key_binding("q", "quit-check-time", function()
                         check_time()
